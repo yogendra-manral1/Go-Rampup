@@ -1,6 +1,3 @@
-hello:
-	echo "Hello"
-
 build:
 	echo "Installing goimports"
 	go install golang.org/x/tools/cmd/goimports@latest
@@ -25,4 +22,4 @@ migrate:
 	$(info $(M) Executing migrate command…)
 	./goose $(migrateargs)
 
-all: hello build run
+all: build run
