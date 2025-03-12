@@ -10,6 +10,15 @@ type PasswordUpdatePayload struct {
 	NewPassword string `json:"new_password" validate:"required"`
 }
 
+type UsersListItem struct {
+	Id    uint   `json:"user_id"`
+	Email string `json:"email"`
+}
+
+type UsersListPayload struct {
+	Users []UsersListItem
+}
+
 type UserUpdatePayload struct {
 	Email         string `json:"email" validate:"email"`
 	FirstName     string `json:"first_name"`

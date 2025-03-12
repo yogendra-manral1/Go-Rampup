@@ -3,6 +3,7 @@ package routing
 import (
 	"github.com/gin-contrib/cors"
 	"Go-Rampup/apps/auth"
+	"Go-Rampup/apps/socialize"
 	"Go-Rampup/middlewares"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -27,6 +28,8 @@ func GetRouter(db *gorm.DB) *gin.Engine {
 
 	// Add api routes
 	userAuthCtrl := auth.UserAuthController{DB: db}
+	socializeCtrl := socialize.SocializeController{DB: db}
 	userAuthCtrl.SetRoutes(apiRouter.Group("/auth"))
+	socializeCtrl.SetRoutes(apiRouter.Group("/socialize"))
 	return router
 }

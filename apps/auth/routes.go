@@ -7,6 +7,7 @@ import (
 
 func (ctrl *UserAuthController) SetRoutes(r *gin.RouterGroup){
 	r.GET("/", middlewares.Authorization, ctrl.Detail)
+	r.GET("/list/", middlewares.Authorization, ctrl.GetAllUsers)
 	r.DELETE("/", middlewares.Authorization, ctrl.DeleteUser)
 	r.PATCH("/update/", middlewares.Authorization, ctrl.UpdateUser)
 	r.POST("/login/", ctrl.Login, middlewares.CreateToken)

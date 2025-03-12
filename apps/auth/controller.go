@@ -6,6 +6,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"gorm.io/gorm"
 	"net/http"
+	"Go-Rampup/constants"
 )
 
 type UserAuthController struct {
@@ -17,12 +18,12 @@ func (ctrl *UserAuthController) register(context *gin.Context) {
 	if err := context.ShouldBindJSON(&user); err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
-	err := ctrl.createUser(&user)
+	status, err := ctrl.createUser(&user)
 	if err != nil {
-		context.AbortWithStatusJSON(http.StatusBadRequest, err.Error())
+		context.AbortWithStatusJSON(status, err.Error())
 		return
 	}
-	context.Set("email", user.Email)
+	context.Set(constants.GetConstants().ContextKeys.EMAIL, user.Email)
 }
 
 func (ctrl *UserAuthController) Login(context *gin.Context) {
@@ -35,24 +36,21 @@ func (ctrl *UserAuthController) Login(context *gin.Context) {
 		return
 	}
 	var user models.User
-	err = user.GetUser(ctrl.DB, [][]string{{"email = ?", loginPayload.Email}})
-	if err != nil {
-		context.AbortWithStatusJSON(http.StatusNotFound, err.Error())
-		return
+	status, err := ctrl.LoginUser(&user, loginPayload)
+	if err != nil{
+		context.AbortWithStatusJSON(status, err.Error())
 	}
-	ctrl.DB.Model(&user).Where("email = ?", loginPayload.Email).First(&user)
-	if !VerifyPassword(loginPayload.Password, user.Password) {
-		context.JSON(http.StatusUnauthorized, nil)
-		return
-	}
-	context.Set("email", user.Email)
-	context.Next()
+	context.Set(constants.GetConstants().ContextKeys.EMAIL, user.Email)
 }
 
 func (ctrl *UserAuthController) Detail(context *gin.Context) {
 	var user UserDetails
-	ctrl.DB.Model(&models.User{}).Where("email = ?", context.GetString("email")).First(&user)
-	context.JSON(http.StatusOK, user)
+	status, err := ctrl.GetUserDetail(&user, context.GetString(constants.GetConstants().ContextKeys.EMAIL))
+	if err != nil {
+		context.AbortWithStatusJSON(status, err.Error())
+		return
+	}
+	context.JSON(status, user)
 }
 
 func (ctrl *UserAuthController) UpdateUser(context *gin.Context) {
@@ -62,10 +60,13 @@ func (ctrl *UserAuthController) UpdateUser(context *gin.Context) {
 	}
 	userUpdateValidator := validator.New(validator.WithRequiredStructEnabled())
 	userUpdateValidator.Struct(userData)
-	var user models.User
-	ctrl.DB.Model(&user).Where("email = ?", context.GetString("email")).Updates(&userData)
-	ctrl.DB.Model(&user).Where("email = ?", context.GetString("email")).First(&user)
-	context.JSON(http.StatusOK, user)
+	var user UserDetails
+	status, err := ctrl.UpdateUserDetail(&userData, &user, context.GetString(constants.GetConstants().ContextKeys.EMAIL))
+	if err != nil {
+		context.AbortWithStatusJSON(status, err.Error())
+		return
+	}
+	context.JSON(status, user)
 }
 
 func (ctrl *UserAuthController) UpdatePassword(context *gin.Context) {
@@ -80,19 +81,29 @@ func (ctrl *UserAuthController) UpdatePassword(context *gin.Context) {
 		return
 	}
 	var user models.User
-	ctrl.DB.Model(&user).Where("email = ?", context.GetString("email")).First(&user)
-	if !VerifyPassword(passwordUpdatePayload.OldPassword, user.Password) {
-		context.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Old password does not match"})
+	status, err := ctrl.UpdateUserPassword(&user, context.GetString(constants.GetConstants().ContextKeys.EMAIL), passwordUpdatePayload)
+	if err != nil {
+		context.AbortWithStatusJSON(status, err.Error())
 		return
 	}
-	if newPassword, err := HashPassword(passwordUpdatePayload.NewPassword); err == nil {
-		ctrl.DB.Model(&user).Where("email = ?", context.GetString("email")).Update("password", newPassword)
-	}
-	context.JSON(http.StatusOK, user)
+	context.JSON(status, user)
 }
 
 func (ctrl *UserAuthController) DeleteUser(context *gin.Context) {
-	var user models.User
-	ctrl.DB.Model(&user).Where("email = ?", context.GetString("email")).First(&user)
-	ctrl.DB.Delete(&user)
+	status, err := ctrl.DeleteUserDetail(context.GetString(constants.GetConstants().ContextKeys.EMAIL))
+	if err != nil {
+		context.AbortWithStatusJSON(status, err.Error())
+		return
+	}
+	context.JSON(status, "User Deleted Successfully")
+}
+
+func (ctrl *UserAuthController) GetAllUsers(context *gin.Context){
+	var users []UsersListItem
+	status, err := ctrl.GetUsersList(users)
+	if err != nil {
+		context.AbortWithStatusJSON(status, err.Error())
+		return
+	}
+	context.JSON(status, users)
 }

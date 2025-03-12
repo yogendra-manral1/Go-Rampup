@@ -5,16 +5,16 @@ import (
 	"context"
 	"database/sql"
 	"gorm.io/gorm"
-	models "Go-Rampup/db/models"
+	base_models "Go-Rampup/db/models/base"
 	"gorm.io/driver/postgres"
 	"github.com/pressly/goose/v3"
 )
 
 func init() {
-	goose.AddMigrationContext(upAddUsersTable, downAddUsersTable)
+	goose.AddMigrationContext(up0001, down0001)
 }
 
-func upAddUsersTable(ctx context.Context, tx *sql.Tx) error {
+func up0001(ctx context.Context, tx *sql.Tx) error {
 	// This code is executed when the migration is applied.
 	config := config.GetConfig()
 	gormDB, err := gorm.Open(postgres.Open(config.DB.DSN), &gorm.Config{})
@@ -22,11 +22,11 @@ func upAddUsersTable(ctx context.Context, tx *sql.Tx) error {
 		return err
 	}
 
-	gormDB.Migrator().CreateTable(&models.User{})
+	gormDB.Migrator().CreateTable(&base_models.User{})
 	return nil
 }
 
-func downAddUsersTable(ctx context.Context, tx *sql.Tx) error {
+func down0001(ctx context.Context, tx *sql.Tx) error {
 	// This code is executed when the migration is rolled back.
 	config := config.GetConfig()
 	gormDB, err := gorm.Open(postgres.Open(config.DB.DSN), &gorm.Config{})
@@ -34,6 +34,6 @@ func downAddUsersTable(ctx context.Context, tx *sql.Tx) error {
 		return err
 	}
 
-	gormDB.Migrator().DropTable(&models.User{})
+	gormDB.Migrator().DropTable(&base_models.User{})
 	return nil
 }
